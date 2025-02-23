@@ -1,0 +1,32 @@
+# Environments
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.env
+
+# Data - exclude everything in data except figures
+data/*
+!data/outputs/
+data/outputs/*
+!data/outputs/figures/
+data.zip
+
+# IDE stuff
+.vscode/
+
+# Jupyter stuff
+.ipynb_checkpoints/
+
+# Linting
+.ruff_cache
+
+# MacOS stuff
+.DS_Store
+.AppleDouble/
+.LSOverride/
+Icon/
+._*/
+
+# Testing files
+playground.ipynb

@@ -1,0 +1,171 @@
+[project]
+authors = [{ name = "Audrey Wientjes" }]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Web Environment",
+  "Framework :: Jupyter",
+  "Intended Audience :: Education",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: GNU AGPLv3",
+  "Natural Language :: English",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Environmental Science",
+  "Topic :: Scientific/Engineering :: GIS",
+  "Topic :: Scientific/Engineering :: Hydrology",
+  "Topic :: Scientific/Engineering :: Information Analysis",
+]
+dependencies = [
+  "cartopy>=0.24.1",
+  "fuzzywuzzy>=0.18.0",
+  "geocoder>=1.38.1",
+  "geopandas>=1.0.1",
+  "haversine>=2.9.0",
+  "jupyter>=1.1.1",
+  "numpy>=2.2.2",
+  "openpyxl>=3.1.5",
+  "pandas>=2.2.3",
+  "pycountry-convert>=0.7.2",
+  "python-levenshtein>=0.26.1",
+  "rasterio>=1.4.3",
+  "scikit-learn>=1.6.1",
+  "scipy>=1.15.1",
+  "scrapy>=2.12.0",
+  "seaborn>=0.13.2",
+  "statsmodels>=0.14.4",
+  "tqdm>=4.67.1",
+]
+keywords = [
+  "data centers",
+  "geospatial analysis",
+  "industrial ecology",
+  "water footprint",
+  "water scarcity",
+]
+license = "GNU AGPLv3"
+license-files = ["LICENSE"]
+maintainers = [{ name = "Audrey Wientjes" }]
+name = "data-center-water-footprint"
+readme = "README.md"
+requires-python = ">= 3.13"
+version = "0.1.0"
+
+[project.urls]
+Repository = "https://github.com/amwientjes/<data-center-water-footprint>"
+
+[dependency-groups]
+dev = ["ruff >=0.9.3"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+# Exclude automatically generated files from linting
+extend-exclude = ["*/.venv/*", "*/.vscode/*", "*/scrapy/*"]
+
+# But include the self-written scrapy spiders
+extend-include = ["*/scrapy/spiders/*"]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+extend-select = [
+  "A",      # flake8-builtins (checks for conflicts with Python builtins)
+  "ANN",    # flake8-annotations (checks for missing type annotations)
+  "ARG",    # flake8-unused-arguments
+  "B",      # flake8-bugbear (fixes typical bugs)
+  "BLE",    # flake8-blind-except
+  "C4",     # flake8-comprehensions (fixes iterable comprehensions)
+  "C90",    # mccabe
+  "D",      # pydocstyle
+  "DTZ",    # flake8-datetimez (checks for naive datetime uses without timezone)
+  "E",      # pycodestyle errors
+  "EM",     # flake8-errmsgs (checks for error messages)
+  "FBT",    # flake8-boolean-trap
+  "FIX",    # flake8-fixme
+  "FLY",    # flynt (replaces `str.join` calls with f-strings)
+  "FURB",   # refurb (refurbishes code)
+  "G",      # flake8-logging-format
+  "I",      # isort
+  "ICN",    # flake8-import-conventions
+  "INP",    # flake8-no-pep420 (checks for implicit namespace packages)
+  "ISC",    # flake8-implicit-str-concat (fixes implicit string concatenation)
+  "N",      # pep8-naming (checks for naming conventions)
+  "NPY",    # NumPy-specific rules
+  "PD",     # pandas-vet (checks for Pandas issues)
+  "PERF",   # Perflint (checks for performance issues)
+  "PGH",    # pygrep-hooks (checks for common Python issues)
+  "PIE",    # flake8-pie (checks for miscellaneous issues)
+  "PL",     # Pylint (checks for pylint errors)
+  "PTH",    # lake8-use-pathlib (ensures pathlib is used instead of os.path)
+  "Q004",   # flake8-quotes: unnecessary-escaped-quote (other 'Q' rules can conflict with formatter)
+  "RET",    # flake8-return (checks return values)
+  "RUF",    # Ruff-specific rules
+  "S",      # flake8-bandit (security)
+  "SIM",    # flake8-simplify
+  "TCH",    # flake8-type-checking
+  "TID252", # flake8-tidy-imports: relative-imports (replaces relative imports with absolute imports)
+  "TRY",    # tryceratops (checks for common issues with try-except blocks)
+  "UP",     # pyupgrade (upgrades Python syntax)
+  "W",      # pycodestyle warnings
+]
+
+fixable = [
+  "B",      # flake8-bugbear (fixes typical bugs)
+  "C4",     # flake8-comprehensions (fixes iterable comprehensions)
+  "D",      # pydocstyle
+  "E",      # pycodestyle errors
+  "EM",     # flake8-errmsgs (checks for error messages)
+  "FLY",    # flynt (replaces `str.join` calls with f-strings)
+  "FURB",   # refurb (refurbishes code)
+  "G",      # flake8-logging-format
+  "I",      # isort
+  "ICN",    # flake8-import-conventions
+  "ISC",    # flake8-implicit-str-concat (fixes implicit string concatenation)
+  "LOG",    # flake8-logging
+  "N",      # pep8-naming (checks for naming conventions)
+  "NPY",    # NumPy-specific rules
+  "PD",     # pandas-vet (checks for Pandas issues)
+  "PERF",   # Perflint (checks for performance issues)
+  "PGH",    # pygrep-hooks (checks for common Python issues)
+  "PIE",    # flake8-pie (checks for miscellaneous issues)
+  "PL",     # Pylint (checks for pylint errors)
+  "PT",     # flake8-pytest-style (checks for pytest fixtures)
+  "PTH",    # flake8-use-pathlib (ensures pathlib is used instead of os.path)
+  "Q004",   # flake8-quotes: unnecessary-escaped-quote (other 'Q' rules can conflict with formatter)
+  "RET",    # flake8-return (checks return values)
+  "RUF",    # Ruff-specific rules
+  "S",      # flake8-bandit (security)
+  "SIM",    # flake8-simplify
+  "TCH",    # flake8-type-checking
+  "TID252", # flake8-tidy-imports: relative-imports (replaces relative imports with absolute imports)
+  "TRY",    # tryceratops (checks for common issues with try-except blocks)
+  "UP",     # pyupgrade (upgrades Python syntax)
+  "W",      # pycodestyle warnings
+]
+
+# These rules are ignored to prevent conflicts with formatter or because they are overly strict
+ignore = [
+  "ANN204", # missing-return-type-special-method
+  "D102",   # undocumented-public-method
+  "D104",   # undocumented-public-package
+  "D105",   # undocumented-magic-method
+  "D107",   # undocumented-public-init
+  "D206",   # indent-with-spaces
+  "D300",   # triple-single-quotes
+  "E111",   # indentation-with-invalid-multiple
+  "E114",   # indentation-with-invalid-multiple-comment
+  "E117",   # over-indented
+  "ISC001", # single-line-implicit-string-concatenation
+  "ISC002", # multi-line-implicit-string-concatenation
+  "RET504", # unnecessary-assign
+  "W191",   # tab-indentation
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pylint]
+allow-magic-value-types = ["int"]
+max-args = 10
