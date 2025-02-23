@@ -3,8 +3,6 @@
 ## Mapping the Global Water Risks of Data Centers in a Warming World
 
 ## Table of Contents
-
-- [Mapping the Global Water Risks of Data Centers in a Warming World](#mapping-the-global-water-risks-of-data-centers-in-a-warming-world)
 - [Overview](#overview)
   - [Problem Statement](#problem-statement)
   - [Project structure](#project-structure)
