@@ -1,8 +1,9 @@
 # Will the Cloud Run Dry?
 
-## Mapping the Global Water Risks of Data Centers in a Warming World
+**Mapping the Global Water Risks of Data Centers in a Warming World**
 
 ## Table of Contents
+
 - [Overview](#overview)
   - [Problem Statement](#problem-statement)
   - [Project structure](#project-structure)
@@ -22,7 +23,6 @@ See the [pyproject.toml](pyproject.toml) file for complete package information s
 
 The input data for this project is available on Zenodo: [10.5281/zenodo.14914472](https://zenodo.org/records/149144720)
 
-
 ### Problem Statement
 
 Data centers require significant water resources for cooling systems and power generation, yet the global scale and distribution is still unknown. With water scarcity risks growing as global warming rises, data centers are increasingly vulnerable, while contributing to local water stress. This project analyzes their vulnerability and contributions to local water scarcity through:
@@ -33,7 +33,6 @@ Data centers require significant water resources for cooling systems and power g
 - Assessing the impact of data centers on water scarcity
 
 ### Project structure
-
 
 ```bash
 ├── data
@@ -89,4 +88,4 @@ The code in this repository is licensed under the GNU AGPLv3 License. See the [L
 
 ## Contact
 
-For further inquiries, pleast contact the author through LinkedIn: [Audrey Wientjes](https://www.linkedin.com/in/audrey-wientjes/)
+For further inquiries, please contact the author through LinkedIn: [Audrey Wientjes](https://www.linkedin.com/in/audrey-wientjes/)
