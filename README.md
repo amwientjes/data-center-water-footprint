@@ -80,7 +80,7 @@ Choose one of the following options to run the Jupyter notebooks:
 
 ### Data sources
 
-The input data for this project is available on Zenodo: [10.5281/zenodo.14914472](https://zenodo.org/records/149144720)
+The input data for this project is available on Zenodo: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14914472.svg)](https://doi.org/10.5281/zenodo.14914472)
 
 ## License
 
