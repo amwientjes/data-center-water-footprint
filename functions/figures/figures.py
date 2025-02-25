@@ -561,6 +561,9 @@ def plot_exacerbate_tip_water_scarcity_barchart(
     legend3 = ax.legend(handles=[total_handle], loc="upper right", fontsize=10, bbox_to_anchor=(1, 0.95))
     ax.add_artist(legend3)
 
+    # Define y axis limits
+    ax.set_ylim(0, 13)
+
     # Save the plot
     plt.savefig(figure_dir / "tipping_exacerbating_water_scarcity_barchart.png", dpi=300, bbox_inches="tight")
 
