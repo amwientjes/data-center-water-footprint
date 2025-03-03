@@ -21,7 +21,8 @@ This repository contains the code for the MSc Industrial Ecology thesis project 
 
 See the [pyproject.toml](pyproject.toml) file for complete package information such as project metadata and dependencies.
 
-The input data for this project is available on Zenodo: [10.5281/zenodo.14914472](https://zenodo.org/records/149144720)
+The input data for this project is available on Zenodo: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14914472.svg)](https://doi.org/10.5281/zenodo.14914472)
+
 
 ### Problem Statement
 
