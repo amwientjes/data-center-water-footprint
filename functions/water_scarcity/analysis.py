@@ -228,30 +228,44 @@ def calculate_water_scarcity(
 
     # Calculate available water
     available_water = {
-        "base": (result[discharge_column] + result[abstraction_column] - result[efr_column]),
-        "dc": (result[discharge_column] + result[abstraction_column] - result[efr_column]),
+        "base": (result[discharge_column] + result[abstraction_column]), # Base case without accounting for data center water use
+        "dc": (result[discharge_column] + result[abstraction_column]), # With data center water use
     }
 
     if efr_sensitivity_analysis:
         available_water.update(
             {
-                "base_0p6": (result[discharge_column] + result[abstraction_column] - result[f"{efr_column}_0p6"]),
-                "dc_0p6": (result[discharge_column] + result[abstraction_column] - result[f"{efr_column}_0p6"]),
+                "base_0p6": (result[discharge_column] + result[abstraction_column]), # Base case with 0.6 EFR
+                "dc_0p6": (result[discharge_column] + result[abstraction_column]), # With data center water use and 0.6 EFR
             }
         )
 
-    # Calculate all indices at once
+    # Calculate indices
     indices = {
-        "water_scarcity_index": result[abstraction_column] / available_water["base"],
+        # Water scarcity index
+        "water_scarcity_index": result[abstraction_column] / (available_water["base"]-result[efr_column]),
         "water_scarcity_index_dc": (result[abstraction_column] + result["dc_cumulative_monthly_water_use_m3"])
+        / (available_water["dc"]-result[efr_column]),
+
+        # Vulnerability index
+        "vulnerability_index": result[abstraction_column] / available_water["base"],
+        "vulnerability_index_dc": (result[abstraction_column] + result["dc_cumulative_monthly_water_use_m3"])
         / available_water["dc"],
     }
 
     if efr_sensitivity_analysis:
         indices.update(
             {
-                "water_scarcity_index_0p6": result[abstraction_column] / available_water["base_0p6"],
+                # Water scarcity index with 0.6 EFR
+                "water_scarcity_index_0p6": result[abstraction_column] / (available_water["base_0p6"]-result[f"{efr_column}_0p6"]),
                 "water_scarcity_index_dc_0p6": (
+                    result[abstraction_column] + result["dc_cumulative_monthly_water_use_m3"]
+                )
+                / (available_water["dc_0p6"]-result[f"{efr_column}_0p6"]),
+
+                # Vulnerability index with 0.6 EFR
+                "vulnerability_index_0p6": result[abstraction_column] / available_water["base_0p6"],
+                "vulnerability_index_dc_0p6": (
                     result[abstraction_column] + result["dc_cumulative_monthly_water_use_m3"]
                 )
                 / available_water["dc_0p6"],
@@ -299,6 +313,15 @@ def get_water_scarcity_summary(
             "WSI_dc_mean": ("water_scarcity_index_dc", "mean"),
             "WSI_sd": ("water_scarcity_index", "std"),  # Standard deviation of WSI
             "WSI_dc_sd": ("water_scarcity_index_dc", "std"),  # Standard deviation of WSI_dc
+            "months_vulnerability": ("vulnerability_index", lambda x: ((x >= 1) | (x < 0)).sum()),  # Count months with vulnerability > 1
+            "months_vulnerability_dc": (
+                "vulnerability_index_dc",
+                lambda x: ((x >= 1) | (x < 0)).sum(),
+            ),  # Count months with vulnerability_dc > 1
+            "vulnerability_mean": ("vulnerability_index", "mean"),
+            "vulnerability_dc_mean": ("vulnerability_index_dc", "mean"),
+            "vulnerability_sd": ("vulnerability_index", "std"),  # Standard deviation of vulnerability
+            "vulnerability_dc_sd": ("vulnerability_index_dc", "std"),  # Standard deviation of vulnerability
         }
     }
 
@@ -309,6 +332,10 @@ def get_water_scarcity_summary(
             "months_WSI_dc": ("water_scarcity_index_dc_0p6", lambda x: ((x >= 1) | (x < 0)).sum()),
             "WSI_mean": ("water_scarcity_index_0p6", "mean"),
             "WSI_dc_mean": ("water_scarcity_index_dc_0p6", "mean"),
+            "months_vulnerability": ("vulnerability_index_0p6", lambda x: ((x >= 1) | (x < 0)).sum()),
+            "months_vulnerability_dc": ("vulnerability_index_dc_0p6", lambda x: ((x >= 1) | (x < 0)).sum()),
+            "vulnerability_mean": ("vulnerability_index_0p6", "mean"),
+            "vulnerability_dc_mean": ("vulnerability_index_dc_0p6", "mean"),
         }
 
     # Process each metric set
