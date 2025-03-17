@@ -262,13 +262,6 @@ def calculate_water_scarcity(
                     result[abstraction_column] + result["dc_cumulative_monthly_water_use_m3"]
                 )
                 / (available_water["dc_0p6"]-result[f"{efr_column}_0p6"]),
-
-                # Vulnerability index with 0.6 EFR
-                "vulnerability_index_0p6": result[abstraction_column] / available_water["base_0p6"],
-                "vulnerability_index_dc_0p6": (
-                    result[abstraction_column] + result["dc_cumulative_monthly_water_use_m3"]
-                )
-                / available_water["dc_0p6"],
             }
         )
 
@@ -332,10 +325,6 @@ def get_water_scarcity_summary(
             "months_WSI_dc": ("water_scarcity_index_dc_0p6", lambda x: ((x >= 1) | (x < 0)).sum()),
             "WSI_mean": ("water_scarcity_index_0p6", "mean"),
             "WSI_dc_mean": ("water_scarcity_index_dc_0p6", "mean"),
-            "months_vulnerability": ("vulnerability_index_0p6", lambda x: ((x >= 1) | (x < 0)).sum()),
-            "months_vulnerability_dc": ("vulnerability_index_dc_0p6", lambda x: ((x >= 1) | (x < 0)).sum()),
-            "vulnerability_mean": ("vulnerability_index_0p6", "mean"),
-            "vulnerability_dc_mean": ("vulnerability_index_dc_0p6", "mean"),
         }
 
     # Process each metric set

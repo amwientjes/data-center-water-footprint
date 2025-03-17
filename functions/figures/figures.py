@@ -250,7 +250,10 @@ def plot_vulnerability_at_extraction_sites(
 
 
 def calculate_pp_increased_ws_share(
-    water_scarcity_summary: gpd.GeoDataFrame, power_plants: gpd.GeoDataFrame
+    water_scarcity_summary: gpd.GeoDataFrame,
+    power_plants: gpd.GeoDataFrame,
+    metric: str,
+    sensitivity_analysis: bool = True,
 ) -> gpd.GeoDataFrame:
     """Calculate the share of each power plant capacity that experiences an increase in water scarcity months."""
     # Merge capacity with water_scarcity_summary based on name
@@ -271,31 +274,38 @@ def calculate_pp_increased_ws_share(
 
     # Calculate the tcp share which experiences an increase in water scarcity
     water_scarcity_summary_grid["tcp_mw_share_pp_increase"] = water_scarcity_summary_grid.apply(
-        lambda row: row["tcp_mw_share_pp"] if row["months_WSI_increase"] > 0 else 0, axis=1
+        lambda row: row["tcp_mw_share_pp"] if row[f"months_{metric}_increase"] > 0 else 0, axis=1
     )
 
-    # Repeat for months_WSI_0p6_increase
-    water_scarcity_summary_grid["tcp_mw_share_pp_0p6_increase"] = water_scarcity_summary_grid.apply(
-        lambda row: row["tcp_mw_share_pp"] if row["months_WSI_0p6_increase"] > 0 else 0, axis=1
-    )
+    if sensitivity_analysis:
+        # Repeat for 0.6 EFR
+        water_scarcity_summary_grid["tcp_mw_share_pp_0p6_increase"] = water_scarcity_summary_grid.apply(
+            lambda row: row["tcp_mw_share_pp"] if row[f"months_{metric}_0p6_increase"] > 0 else 0, axis=1
+        )
 
     return water_scarcity_summary_grid
 
 
-def calculate_total_data_center_capacity_at_risk(water_scarcity_summary: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+def calculate_total_data_center_capacity_at_risk(
+    water_scarcity_summary: gpd.GeoDataFrame, metric: str, sensitivity_analysis: bool = True
+) -> gpd.GeoDataFrame:
     """Calculate total capacity at risk for each data center, accounting for both direct and indirect risks."""
     # Calculate grid-level statistics
     grid_stats = (
         water_scarcity_summary.groupby("power_grid_zone")
-        .agg({"tcp_mw_share_pp_increase": "sum", "tcp_mw_share_pp_0p6_increase": "sum", "tcp_mw": "sum"})
+        .agg({"tcp_mw_share_pp_increase": "sum", "tcp_mw": "sum"})
         .rename(
             columns={
                 "tcp_mw_share_pp_increase": "tcp_mw_share_pp_increase_per_grid",
-                "tcp_mw_share_pp_0p6_increase": "tcp_mw_share_pp_0p6_increase_per_grid",
                 "tcp_mw": "tcp_mw_per_grid",
             }
         )
     )
+
+    if sensitivity_analysis:
+        grid_stats["tcp_mw_share_pp_0p6_increase_per_grid"] = water_scarcity_summary.groupby("power_grid_zone")[
+            "tcp_mw_share_pp_0p6_increase"
+        ].sum()
 
     # Calculate risk metrics
     result = water_scarcity_summary.merge(grid_stats, on="power_grid_zone", how="left")
@@ -307,11 +317,13 @@ def calculate_total_data_center_capacity_at_risk(water_scarcity_summary: gpd.Geo
     result["indirect_tcp_increased_risk"] = (
         result["tcp_mw_share_pp_increase_per_grid"] * result["relative_dc_tcp_in_grid"]
     )
-    result["indirect_tcp_increased_risk_0p6"] = (
-        result["tcp_mw_share_pp_0p6_increase_per_grid"] * result["relative_dc_tcp_in_grid"]
-    )
-    result["direct_tcp_increased_risk"] = np.where(result["months_WSI_increase"] > 0, result["tcp_mw"], 0)
-    result["direct_tcp_increased_risk_0p6"] = np.where(result["months_WSI_0p6_increase"] > 0, result["tcp_mw"], 0)
+    result["direct_tcp_increased_risk"] = np.where(result[f"months_{metric}_increase"] > 0, result["tcp_mw"], 0)
+
+    if sensitivity_analysis:
+        result["indirect_tcp_increased_risk_0p6"] = (
+            result["tcp_mw_share_pp_0p6_increase_per_grid"] * result["relative_dc_tcp_in_grid"]
+        )
+        result["direct_tcp_increased_risk_0p6"] = np.where(result[f"months_{metric}_0p6_increase"] > 0, result["tcp_mw"], 0)
 
     # Calculate total risks
     result["total_capacity_at_risk"] = np.where(
@@ -319,11 +331,13 @@ def calculate_total_data_center_capacity_at_risk(water_scarcity_summary: gpd.Geo
         result["direct_tcp_increased_risk"],
         result["indirect_tcp_increased_risk"],
     )
-    result["total_capacity_at_risk_0p6"] = np.where(
-        result["direct_tcp_increased_risk_0p6"] > 0,
-        result["direct_tcp_increased_risk_0p6"],
-        result["indirect_tcp_increased_risk_0p6"],
-    )
+
+    if sensitivity_analysis:
+        result["total_capacity_at_risk_0p6"] = np.where(
+            result["direct_tcp_increased_risk_0p6"] > 0,
+            result["direct_tcp_increased_risk_0p6"],
+            result["indirect_tcp_increased_risk_0p6"],
+        )
 
     return result
 
