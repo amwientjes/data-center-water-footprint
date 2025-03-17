@@ -148,8 +148,12 @@ def plot_water_use_map(
     plt.savefig(f"{figure_dir}/water_use_by_basin_{status}.png", dpi=300, bbox_inches="tight")
 
 
-def plot_water_scarcity_at_extraction_sites(
-    water_scarcity_summary: gpd.GeoDataFrame, figure_dir: Path, warming_scenario: str
+def plot_vulnerability_at_extraction_sites(
+    water_scarcity_summary: gpd.GeoDataFrame,
+    figure_dir: Path,
+    warming_scenario: str,
+    vulnerability_column_name: str,
+    save: bool = True,
 ) -> None:
     """Create a map of water scarcity at data center extraction sites under a given climate change scenario."""
     fig, ax = plt.subplots(figsize=(15, 10), subplot_kw={"projection": ccrs.Robinson()})
@@ -181,8 +185,8 @@ def plot_water_scarcity_at_extraction_sites(
     unique_geometries = water_scarcity_summary.drop_duplicates(subset="geometry")
     for i in range(len(bins) - 1):
         bin_data = unique_geometries[
-            (unique_geometries["months_WSI_increase"] > bins[i])
-            & (unique_geometries["months_WSI_increase"] <= bins[i + 1])
+            (unique_geometries[vulnerability_column_name] > bins[i])
+            & (unique_geometries[vulnerability_column_name] <= bins[i + 1])
         ]
         bin_data.plot(
             ax=ax,
@@ -218,7 +222,7 @@ def plot_water_scarcity_at_extraction_sites(
     # Modify legend placement and styling
     legend1 = ax.legend(
         handles=legend_patches,
-        title="Increase in water scarcity",
+        title="Increase in vulnerability",
         loc="lower left",
         bbox_to_anchor=(0, 0.2),
         ncol=1,
@@ -237,8 +241,9 @@ def plot_water_scarcity_at_extraction_sites(
     )
     ax.add_artist(legend2)
 
-    # Save the plot
-    plt.savefig(f"{figure_dir}/water_scarce_extraction_sites_{warming_scenario}", dpi=300, bbox_inches="tight")
+    # Save the plot if SAVE is True
+    if save:
+        plt.savefig(f"{figure_dir}/vulnerable_extraction_sites_{warming_scenario}", dpi=300, bbox_inches="tight")
 
     # Show plot
     plt.show()
