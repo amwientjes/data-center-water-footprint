@@ -407,6 +407,61 @@ wheels = [
 ]
 
 [[package]]
+name = "data-center-water-footprint"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "cartopy" },
+    { name = "fuzzywuzzy" },
+    { name = "geocoder" },
+    { name = "geopandas" },
+    { name = "haversine" },
+    { name = "jupyter" },
+    { name = "numpy" },
+    { name = "openpyxl" },
+    { name = "pandas" },
+    { name = "pycountry-convert" },
+    { name = "python-levenshtein" },
+    { name = "rasterio" },
+    { name = "scikit-learn" },
+    { name = "scipy" },
+    { name = "scrapy" },
+    { name = "seaborn" },
+    { name = "statsmodels" },
+    { name = "tqdm" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cartopy", specifier = ">=0.24.1" },
+    { name = "fuzzywuzzy", specifier = ">=0.18.0" },
+    { name = "geocoder", specifier = ">=1.38.1" },
+    { name = "geopandas", specifier = ">=1.0.1" },
+    { name = "haversine", specifier = ">=2.9.0" },
+    { name = "jupyter", specifier = ">=1.1.1" },
+    { name = "numpy", specifier = ">=2.2.2" },
+    { name = "openpyxl", specifier = ">=3.1.5" },
+    { name = "pandas", specifier = ">=2.2.3" },
+    { name = "pycountry-convert", specifier = ">=0.7.2" },
+    { name = "python-levenshtein", specifier = ">=0.26.1" },
+    { name = "rasterio", specifier = ">=1.4.3" },
+    { name = "scikit-learn", specifier = ">=1.6.1" },
+    { name = "scipy", specifier = ">=1.15.1" },
+    { name = "scrapy", specifier = ">=2.12.0" },
+    { name = "seaborn", specifier = ">=0.13.2" },
+    { name = "statsmodels", specifier = ">=0.14.4" },
+    { name = "tqdm", specifier = ">=4.67.1" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "ruff", specifier = ">=0.9.3" }]
+
+[[package]]
 name = "debugpy"
 version = "1.8.12"
 source = { registry = "https://pypi.org/simple" }
@@ -2266,61 +2321,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/8a/11/965c6fd8e5cc254f1
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6a/9e/2064975477fdc887e47ad42157e214526dcad8f317a948dee17e1659a62f/terminado-0.18.1-py3-none-any.whl", hash = "sha256:a4468e1b37bb318f8a86514f65814e1afc977cf29b3992a4500d9dd305dcceb0", size = 14154 },
 ]
-
-[[package]]
-name = "thesis"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "cartopy" },
-    { name = "fuzzywuzzy" },
-    { name = "geocoder" },
-    { name = "geopandas" },
-    { name = "haversine" },
-    { name = "jupyter" },
-    { name = "numpy" },
-    { name = "openpyxl" },
-    { name = "pandas" },
-    { name = "pycountry-convert" },
-    { name = "python-levenshtein" },
-    { name = "rasterio" },
-    { name = "scikit-learn" },
-    { name = "scipy" },
-    { name = "scrapy" },
-    { name = "seaborn" },
-    { name = "statsmodels" },
-    { name = "tqdm" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "cartopy", specifier = ">=0.24.1" },
-    { name = "fuzzywuzzy", specifier = ">=0.18.0" },
-    { name = "geocoder", specifier = ">=1.38.1" },
-    { name = "geopandas", specifier = ">=1.0.1" },
-    { name = "haversine", specifier = ">=2.9.0" },
-    { name = "jupyter", specifier = ">=1.1.1" },
-    { name = "numpy", specifier = ">=2.2.2" },
-    { name = "openpyxl", specifier = ">=3.1.5" },
-    { name = "pandas", specifier = ">=2.2.3" },
-    { name = "pycountry-convert", specifier = ">=0.7.2" },
-    { name = "python-levenshtein", specifier = ">=0.26.1" },
-    { name = "rasterio", specifier = ">=1.4.3" },
-    { name = "scikit-learn", specifier = ">=1.6.1" },
-    { name = "scipy", specifier = ">=1.15.1" },
-    { name = "scrapy", specifier = ">=2.12.0" },
-    { name = "seaborn", specifier = ">=0.13.2" },
-    { name = "statsmodels", specifier = ">=0.14.4" },
-    { name = "tqdm", specifier = ">=4.67.1" },
-]
-
-[package.metadata.requires-dev]
-dev = [{ name = "ruff", specifier = ">=0.9.3" }]
 
 [[package]]
 name = "threadpoolctl"
