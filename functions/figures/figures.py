@@ -341,6 +341,228 @@ def calculate_total_data_center_capacity_at_risk(
 
     return result
 
+# TODO: Add comments to this function
+def make_capacity_at_risk_boxplot(
+    water_scarcity_summary: gpd.GeoDataFrame,
+    water_scarcity_summary_dc: gpd.GeoDataFrame,
+    power_plants: gpd.GeoDataFrame,
+    GLOBAL_WARMING_SCENARIOS_FUTURE: list,
+    FIGURES_DIR: Path,
+    fig_name: str,
+    geographical_scope: str,
+    show_error_bars=True
+):
+    """
+    Calculate and plot the percent of data center capacity at increased risk of water scarcity as a boxplot.
+    """
+
+    # Calculate the percentage of months with a WSI increase for each scenario
+    future_scenarios_dict = {
+        "1.5°C": water_scarcity_summary_dc["1_5C"],
+        "2.0°C": water_scarcity_summary_dc["2_0C"],
+        "3.2°C": water_scarcity_summary_dc["3_2C"],
+    }
+    water_scarcity_counts_direct = pd.DataFrame({"Scenario": list(future_scenarios_dict.keys())})
+    for month in range(1, 13):
+        water_scarcity_counts_direct[f"{month} month"] = [
+            100 * (df.loc[df["months_WSI_increase"] == month, "tcp_mw"].sum() / df["tcp_mw"].sum())
+            for df in future_scenarios_dict.values()
+        ]
+    error_data_direct = pd.DataFrame(
+        {
+            "Scenario": list(future_scenarios_dict.keys()),
+            "Direct_increase_error": [
+                100
+                * (
+                    df.loc[df["months_WSI_0p6_increase"] > 0, "tcp_mw"].sum()
+                    - df.loc[df["months_WSI_increase"] > 0, "tcp_mw"].sum()
+                )
+                / df["tcp_mw"].sum()
+                for df in future_scenarios_dict.values()
+            ],
+        }
+    )
+
+    # Calculate the share of each power plant's capacity that is affected by increased water scarcity
+    water_scarcity_summary_boxplot = {}
+
+    for scenario in GLOBAL_WARMING_SCENARIOS_FUTURE:
+        water_scarcity_summary_boxplot[scenario] = calculate_pp_increased_ws_share(
+            water_scarcity_summary[scenario], power_plants, "WSI"
+        )
+
+    # Calculate the total capacity at risk for each data center
+    for scenario in GLOBAL_WARMING_SCENARIOS_FUTURE:
+        water_scarcity_summary_boxplot[scenario] = calculate_total_data_center_capacity_at_risk(
+            water_scarcity_summary_boxplot[scenario], "WSI"
+        )
+
+    # Calculate the water scarcity increase counts as percentages for each month from 1 to 12
+    water_scarcity_counts_indirect = pd.DataFrame({"Scenario": ["1.5°C", "2.0°C", "3.2°C"]})
+    for month in range(1, 13):
+        water_scarcity_counts_indirect[f"{month} month"] = [
+            100
+            * (
+                water_scarcity_summary_boxplot[scenario]
+                .loc[water_scarcity_summary_boxplot[scenario]["months_WSI_increase"] == month, "tcp_mw_share_pp"]
+                .sum()
+                / water_scarcity_summary_boxplot[scenario]["tcp_mw_share_pp"].sum()
+            )
+            for scenario in GLOBAL_WARMING_SCENARIOS_FUTURE
+        ]
+    error_data_indirect = pd.DataFrame({"Scenario": ["1.5°C", "2.0°C", "3.2°C"]})
+    error_data_indirect["Direct_increase_error"] = [
+        100
+        * (
+            (
+                water_scarcity_summary_boxplot[scenario]
+                .loc[water_scarcity_summary_boxplot[scenario]["months_WSI_0p6_increase"] > 0, "tcp_mw_share_pp"]
+                .sum()
+            )
+            - (
+                water_scarcity_summary_boxplot[scenario]
+                .loc[water_scarcity_summary_boxplot[scenario]["months_WSI_increase"] > 0, "tcp_mw_share_pp"]
+                .sum()
+            )
+        )
+        / water_scarcity_summary_boxplot[scenario]["tcp_mw_share_pp"].sum()
+        for scenario in GLOBAL_WARMING_SCENARIOS_FUTURE
+    ]
+
+    # Calculate the total global capacity at risk for each scenario
+    water_scarcity_total_capacity_at_risk = pd.DataFrame(
+        {
+            "Scenario": ["1.5°C", "2.0°C", "3.2°C"],
+            "Total_capacity_at_risk": [
+                100
+                * water_scarcity_summary_boxplot[scenario]["total_capacity_at_risk"].sum()
+                / water_scarcity_summary_boxplot[scenario]["tcp_mw"].sum()
+                for scenario in GLOBAL_WARMING_SCENARIOS_FUTURE
+            ],
+        }
+    )
+    error_data_total = pd.DataFrame(
+        {
+            "Scenario": ["1.5°C", "2.0°C", "3.2°C"],
+            "Total_capacity_at_risk_error": [
+                100
+                * (
+                    water_scarcity_summary_boxplot[scenario]["total_capacity_at_risk_0p6"].sum()
+                    / water_scarcity_summary_boxplot[scenario]["tcp_mw"].sum()
+                )
+                - 100
+                * (
+                    water_scarcity_summary_boxplot[scenario]["total_capacity_at_risk"].sum()
+                    / water_scarcity_summary_boxplot[scenario]["tcp_mw"].sum()
+                )
+                for scenario in GLOBAL_WARMING_SCENARIOS_FUTURE
+            ],
+        }
+    )
+    total_tcp_gw = water_scarcity_summary_boxplot["1_5C"]["tcp_mw"].sum() / 1000
+
+    # Plotting the boxplot
+    future_scenarios_for_plotting = ["1.5°C", "2.0°C", "3.2°C"]
+    bins = [(1, 3), (4, 6), (7, 9), (10, 12)]
+    bin_labels = ["1-3", "4-6", "7-9", "10-12"] # Month ranges
+    num_bins = len(bins)
+    colors = plt.cm.plasma_r(np.linspace(0.13, 0.9, num_bins))
+    fig, ax1 = plt.subplots(figsize=(7, 7))
+    x = np.arange(len(future_scenarios_for_plotting))
+    bar_width = 0.3
+    gap = 0.1  # Spacing between bars
+    x_direct = x + (bar_width / 2 + gap / 2)
+    x_indirect = x - (bar_width / 2 + gap / 2)
+    bottom_direct = np.zeros(len(future_scenarios_for_plotting))
+    bottom_indirect = np.zeros(len(future_scenarios_for_plotting))
+
+    # Plot Indirect bars with stacking (dashed edges)
+    for i, (start, end) in enumerate(bins):
+        bin_data_indirect = water_scarcity_counts_indirect.iloc[:, start : end + 1].sum(axis=1)
+        ax1.bar(
+            x_indirect,
+            bin_data_indirect,
+            bottom=bottom_indirect,
+            width=bar_width,
+            color=colors[i],
+            label=bin_labels[i] if i == 0 else "",
+        )
+        bottom_indirect += bin_data_indirect
+
+    # Plot Direct bars with stacking
+    for i, (start, end) in enumerate(bins):
+        bin_data_direct = water_scarcity_counts_direct.iloc[:, start : end + 1].sum(axis=1)
+        ax1.bar(x_direct, bin_data_direct, bottom=bottom_direct, width=bar_width, color=colors[i])
+        bottom_direct += bin_data_direct
+
+    # Plot Total capacity at risk, as a horizontal line for each scenario
+    for i, scenario in enumerate(future_scenarios_for_plotting):
+        total_capacity = water_scarcity_total_capacity_at_risk.loc[
+            water_scarcity_total_capacity_at_risk["Scenario"] == scenario, "Total_capacity_at_risk"
+        ].to_numpy()[0]
+        ax1.hlines(
+            total_capacity,
+            x_indirect[i] - bar_width / 2,
+            x_direct[i] + bar_width / 2,
+            color="black",
+            linestyle="--",
+            linewidth=1.5,
+            alpha=0.85,
+        )
+        if show_error_bars:
+            error = error_data_total.loc[error_data_total["Scenario"] == scenario, "Total_capacity_at_risk_error"].values[0]
+            ax1.errorbar(x[i], total_capacity, yerr=[[0], [error]], fmt="none", ecolor="grey", capsize=5)
+        print(f"Total capacity at risk for {scenario}: {total_capacity:.0f} %")
+
+    if show_error_bars:
+        for i, scenario in enumerate(future_scenarios_for_plotting):
+            total_direct = water_scarcity_counts_direct.iloc[i, 1:].sum()
+            total_indirect = water_scarcity_counts_indirect.iloc[i, 1:].sum()
+            direct_error = error_data_direct.loc[error_data_direct["Scenario"] == scenario, "Direct_increase_error"].values[0]
+            indirect_error = error_data_indirect.loc[
+                error_data_indirect["Scenario"] == scenario, "Direct_increase_error"
+            ].values[0]
+            ax1.errorbar(x_direct[i], total_direct, yerr=[[0], [direct_error]], fmt="none", ecolor="grey", capsize=5)
+            ax1.errorbar(x_indirect[i], total_indirect, yerr=[[0], [indirect_error]], fmt="none", ecolor="grey", capsize=5)
+
+    # Labels and formatting
+    ax1.set_ylabel(f"{geographical_scope} computing capacity at increased risk (%)", fontsize=12)
+    ax1.set_xlabel("Global warming scenario", fontsize=12, labelpad=10)
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(future_scenarios_for_plotting, rotation=0, fontsize=11)
+    ax1.tick_params(axis="x", labelrotation=0, pad=15 if show_error_bars else 20) # Adjust padding based on error bars which affect y-axis range
+    for i in range(len(future_scenarios_for_plotting)):
+        ax1.text(x_direct[i], -1.2, "Direct", ha="center", va="center", fontsize=10, color="black")
+        ax1.text(x_indirect[i], -1.2, "Indirect", ha="center", va="center", fontsize=10, color="black")
+    ax1.set_xlim(-0.5, len(future_scenarios_for_plotting) - 0.5)
+    handles = [plt.Rectangle((0, 0), 1, 1, color=colors[i]) for i in range(len(bins))]
+    legend1 = ax1.legend(handles, bin_labels, title="Increased months of WS", loc="upper left", fontsize=10)
+    ax1.add_artist(legend1)
+    total_handle = plt.Line2D([0], [0], color="black", linestyle="--", linewidth=1, label="Total")
+    legend2 = ax1.legend(handles=[total_handle], loc="upper left", fontsize=10, bbox_to_anchor=(0, 0.8))
+    ax1.add_artist(legend2)
+    if show_error_bars:
+        error_handle = plt.Line2D([0], [0], color="grey", marker="|", markersize=10, linestyle="", label="60% EFR")
+        legend3 = ax1.legend(handles=[error_handle], loc="upper left", fontsize=10, bbox_to_anchor=(0, 0.75))
+        ax1.add_artist(legend3)
+    ax2 = ax1.twinx()
+    ax2.set_ylabel(f"{geographical_scope} computing capacity at increased risk (GW)", fontsize=12, rotation=270, labelpad=20)
+    ax2.set_ylim(ax1.get_ylim())
+    ax2.set_yticks(ax1.get_yticks())
+    ax2.set_yticklabels([f"{ytick * total_tcp_gw / 100:.0f}" for ytick in ax1.get_yticks()])
+
+    # Save the plot
+    plt.savefig(FIGURES_DIR / fig_name, bbox_inches="tight", dpi=300)
+
+    plt.tight_layout()
+    plt.show()
+
+def filter_by_country(data_dict, country, include=True):
+    if include:
+        return {scenario: df[df["country"] == country] for scenario, df in data_dict.items()}
+    else:
+        return {scenario: df[df["country"] != country] for scenario, df in data_dict.items()}
+
 
 def plot_relative_increase_ws_map(scenario_data: gpd.GeoDataFrame, figure_dir: Path, scenario_name: str) -> None:
     """Plot the relative index of water scarcity increase for direct cooling water use of data centers."""
