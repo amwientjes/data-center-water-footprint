@@ -148,7 +148,7 @@ def plot_water_use_map(
     plt.savefig(f"{figure_dir}/water_use_by_basin_{status}.png", dpi=300, bbox_inches="tight")
 
 
-def plot_vulnerability_at_extraction_sites(
+def plot_months_ws_at_extraction_sites(
     water_scarcity_summary: gpd.GeoDataFrame,
     figure_dir: Path,
     warming_scenario: str,
@@ -174,13 +174,13 @@ def plot_vulnerability_at_extraction_sites(
         transform=ccrs.PlateCarree(),
         color="lightgrey",
         alpha=0.7,
-        markersize=water_scarcity_summary["dc_cumulative_monthly_water_use_m3"] / 30000,
+        markersize=np.sqrt(water_scarcity_summary["dc_cumulative_monthly_water_use_m3"])/3,
         marker="o",
     )
 
     # Define bins and colors
     bins = [0, 3, 5, 8, 12]
-    colors = ["lightgrey"] + [plt.cm.plasma_r(i) for i in np.linspace(0.1, 0.95, len(bins) - 1)]
+    colors = ["lightgrey"] + [plt.cm.YlOrRd(i) for i in np.linspace(0.2, 0.95, len(bins) - 1)] if warming_scenario == "hist" else ["lightgrey"] + [plt.cm.plasma_r(i) for i in np.linspace(0.1, 0.95, len(bins) - 1)]
 
     unique_geometries = water_scarcity_summary.drop_duplicates(subset="geometry")
     for i in range(len(bins) - 1):
@@ -192,7 +192,7 @@ def plot_vulnerability_at_extraction_sites(
             ax=ax,
             transform=ccrs.PlateCarree(),
             color=colors[i + 1],
-            markersize=np.sqrt(bin_data["dc_cumulative_monthly_water_use_m3"]) / 10,
+            markersize=np.sqrt(bin_data["dc_cumulative_monthly_water_use_m3"])/3,
             marker="o",
         )
 
@@ -203,43 +203,43 @@ def plot_vulnerability_at_extraction_sites(
         for color, label in zip(colors, legend_labels, strict=False)
     ]
 
-    sizes = [1000, 5000, 10000, 25000]
-    size_labels = [f"{int(size):,}" for size in sizes]
-    size_patches = [
-        plt.Line2D(
-            [0],
-            [0],
-            color="black",
-            marker="o",
-            markersize=np.sqrt(size) / 10,
-            linestyle="",
-            markerfacecolor="none",
-            label=label,
-        )
-        for size, label in zip(sizes, size_labels, strict=False)
-    ]
-
     # Modify legend placement and styling
+    legend_title = (
+        "Months of water scarcity" if warming_scenario == "hist" else "Increase in months of water scarcity"
+    )
     legend1 = ax.legend(
         handles=legend_patches,
-        title="Increase in vulnerability",
+        title=legend_title,
         loc="lower left",
-        bbox_to_anchor=(0, 0.2),
         ncol=1,
         framealpha=1,
         facecolor="white",
     )
     ax.add_artist(legend1)
 
-    legend2 = ax.legend(
-        handles=size_patches,
-        title="Monthly water demand (m3)",
-        loc="lower left",
-        ncol=1,
-        framealpha=1,
-        facecolor="white",
-    )
-    ax.add_artist(legend2)
+    # Add custom concentric circles legend for marker sizes directly on the main figure
+    import matplotlib.patches as mpatches
+    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
+    sizes = [10_000, 100_000, 1_000_000, 10_000_000]
+    labels = [f"{int(s):,}" for s in sizes]
+    marker_sizes = [(np.sqrt(s)/3)**0.53 for s in sizes]
+
+    legend_ax = inset_axes(ax, width="10%", height="20%", loc="center left", bbox_to_anchor=(0, -0.18, 1, 1), bbox_transform=ax.transAxes, borderpad=2)
+    legend_ax.axis("off")
+    center_x = 0.5
+    baseline_y = 0.2  # This is the y-coordinate for the bottom of all circles
+    for msize, label in zip(reversed(marker_sizes), reversed(labels)):
+        radius = msize / 100
+        center_y = baseline_y + radius
+        circle = mpatches.Circle((center_x, center_y), radius=radius, fill=False, edgecolor="black", linewidth=1)
+        legend_ax.add_patch(circle)
+        legend_ax.text(0.9, center_y + msize/130, label, va="center", fontsize=10)
+    legend_ax.text(0.8, baseline_y + max(marker_sizes)/100 + 0.5, "Monthly water withdrawal (m3)", ha="center", va="bottom", fontsize=10)
+
+    scenario_text = "Historical" if warming_scenario == "hist" else "1.5°C warming" if warming_scenario == "1_5C" else "2.0°C warming" if warming_scenario == "2_0C" else "3.2°C warming"
+    # Add label in top left corner of the map
+    ax.text(0.01, 0.99, scenario_text, transform=ax.transAxes, fontsize=12, fontweight="bold")
 
     # Save the plot if SAVE is True
     if save:
