@@ -152,7 +152,8 @@ def plot_months_ws_at_extraction_sites(
     water_scarcity_summary: gpd.GeoDataFrame,
     figure_dir: Path,
     warming_scenario: str,
-    vulnerability_column_name: str,
+    ws_column_name: str,
+    include_dc_contributions: bool = False,
     save: bool = True,
 ) -> None:
     """Create a map of water scarcity at data center extraction sites under a given climate change scenario."""
@@ -174,19 +175,24 @@ def plot_months_ws_at_extraction_sites(
         transform=ccrs.PlateCarree(),
         color="lightgrey",
         alpha=0.7,
-        markersize=np.sqrt(water_scarcity_summary["dc_cumulative_monthly_water_use_m3"])/3,
+        markersize=np.sqrt(water_scarcity_summary["dc_cumulative_monthly_water_use_m3"]) / 3,
         marker="o",
     )
 
     # Define bins and colors
     bins = [0, 3, 5, 8, 12]
-    colors = ["lightgrey"] + [plt.cm.YlOrRd(i) for i in np.linspace(0.2, 0.95, len(bins) - 1)] if warming_scenario == "hist" else ["lightgrey"] + [plt.cm.plasma_r(i) for i in np.linspace(0.1, 0.95, len(bins) - 1)]
+    if include_dc_contributions:
+        colors = ["lightgrey"] + [plt.cm.viridis_r(i) for i in np.linspace(0.2, 0.95, len(bins) - 1)]
+    elif not include_dc_contributions and warming_scenario == "hist":
+        colors = ["lightgrey"] + [plt.cm.YlOrRd(i) for i in np.linspace(0.2, 0.95, len(bins) - 1)]
+    elif not include_dc_contributions and warming_scenario != "hist":
+        colors = ["lightgrey"] + [plt.cm.plasma_r(i) for i in np.linspace(0.1, 0.95, len(bins) - 1)]
 
     unique_geometries = water_scarcity_summary.drop_duplicates(subset="geometry")
     for i in range(len(bins) - 1):
         bin_data = unique_geometries[
-            (unique_geometries[vulnerability_column_name] > bins[i])
-            & (unique_geometries[vulnerability_column_name] <= bins[i + 1])
+            (unique_geometries[ws_column_name] > bins[i])
+            & (unique_geometries[ws_column_name] <= bins[i + 1])
         ]
         bin_data.plot(
             ax=ax,
@@ -205,7 +211,7 @@ def plot_months_ws_at_extraction_sites(
 
     # Modify legend placement and styling
     legend_title = (
-        "Months of water scarcity" if warming_scenario == "hist" else "Increase in months of water scarcity"
+        "Months of water scarcity" if warming_scenario == "hist" and not include_dc_contributions else "Increase in months of water scarcity"
     )
     legend1 = ax.legend(
         handles=legend_patches,
@@ -243,7 +249,10 @@ def plot_months_ws_at_extraction_sites(
 
     # Save the plot if SAVE is True
     if save:
-        plt.savefig(f"{figure_dir}/vulnerable_extraction_sites_{warming_scenario}", dpi=300, bbox_inches="tight")
+        if include_dc_contributions:
+            plt.savefig(f"{figure_dir}/dc_contributions_ws_{warming_scenario}", dpi=300, bbox_inches="tight")
+        else:
+            plt.savefig(f"{figure_dir}/vulnerable_extraction_sites_{warming_scenario}", dpi=300, bbox_inches="tight")
 
     # Show plot
     plt.show()
@@ -526,7 +535,7 @@ def make_capacity_at_risk_boxplot(
             ax1.errorbar(x_indirect[i], total_indirect, yerr=[[0], [indirect_error]], fmt="none", ecolor="grey", capsize=5)
 
     # Labels and formatting
-    ax1.set_ylabel(f"{geographical_scope} computing capacity at increased risk (%)", fontsize=12)
+    ax1.set_ylabel(f"{geographical_scope} data center capacity at increased risk (%)", fontsize=12)
     ax1.set_xlabel("Global warming scenario", fontsize=12, labelpad=10)
     ax1.set_xticks(x)
     ax1.set_xticklabels(future_scenarios_for_plotting, rotation=0, fontsize=11)
@@ -546,7 +555,7 @@ def make_capacity_at_risk_boxplot(
         legend3 = ax1.legend(handles=[error_handle], loc="upper left", fontsize=10, bbox_to_anchor=(0, 0.75))
         ax1.add_artist(legend3)
     ax2 = ax1.twinx()
-    ax2.set_ylabel(f"{geographical_scope} computing capacity at increased risk (GW)", fontsize=12, rotation=270, labelpad=20)
+    ax2.set_ylabel(f"{geographical_scope} data center capacity at increased risk (GW)", fontsize=12, rotation=270, labelpad=20)
     ax2.set_ylim(ax1.get_ylim())
     ax2.set_yticks(ax1.get_yticks())
     ax2.set_yticklabels([f"{ytick * total_tcp_gw / 100:.0f}" for ytick in ax1.get_yticks()])
@@ -666,6 +675,7 @@ def plot_exacerbate_tip_water_scarcity_barchart(
     error_tip_into_water_scarcity: pd.DataFrame,
     error_exacerbate_water_scarcity: pd.DataFrame,
     figure_dir: Path,
+    show_error_bars=False,
 ) -> None:
     """Plot stacked bars showing data centers that tip into or exacerbate water scarcity."""
     # Create figure
@@ -714,27 +724,28 @@ def plot_exacerbate_tip_water_scarcity_barchart(
         bottom_exacerbate_water_scarcity += bin_data_exacerbate_water_scarcity
 
     # Add error bars
-    for i, scenario in enumerate(scenarios):
-        total_tipping = tip_into_water_scarcity_counts.iloc[i, 1:].sum()
-        total_exacerbating = exacerbate_water_scarcity_counts.iloc[i, 1:].sum()
+    if show_error_bars:
+        for i, scenario in enumerate(scenarios):
+            total_tipping = tip_into_water_scarcity_counts.iloc[i, 1:].sum()
+            total_exacerbating = exacerbate_water_scarcity_counts.iloc[i, 1:].sum()
 
-        tipping_error = (
-            error_tip_into_water_scarcity.loc[error_tip_into_water_scarcity["Scenario"] == scenario].iloc[0, 1:].sum()
-        )
-        exacerbating_error = (
-            error_exacerbate_water_scarcity.loc[error_exacerbate_water_scarcity["Scenario"] == scenario]
-            .iloc[0, 1:]
-            .sum()
-        )
-        ax.errorbar(
-            x_exacerbating[i],
-            total_exacerbating,
-            yerr=[[0], [exacerbating_error]],
-            fmt="none",
-            ecolor="grey",
-            capsize=5,
-        )
-        ax.errorbar(x_tipping[i], total_tipping, yerr=[[0], [tipping_error]], fmt="none", ecolor="grey", capsize=5)
+            tipping_error = (
+                error_tip_into_water_scarcity.loc[error_tip_into_water_scarcity["Scenario"] == scenario].iloc[0, 1:].sum()
+            )
+            exacerbating_error = (
+                error_exacerbate_water_scarcity.loc[error_exacerbate_water_scarcity["Scenario"] == scenario]
+                .iloc[0, 1:]
+                .sum()
+            )
+            ax.errorbar(
+                x_exacerbating[i],
+                total_exacerbating,
+                yerr=[[0], [exacerbating_error]],
+                fmt="none",
+                ecolor="grey",
+                capsize=5,
+            )
+            ax.errorbar(x_tipping[i], total_tipping, yerr=[[0], [tipping_error]], fmt="none", ecolor="grey", capsize=5)
 
     # Add a total line adding the tipping and exacerbating values
     for i in range(len(scenarios)):
@@ -751,26 +762,27 @@ def plot_exacerbate_tip_water_scarcity_barchart(
         )
 
     # Add error bar for total based on tipping and exacerbating errors
-    for i, scenario in enumerate(scenarios):
-        total_tipping = tip_into_water_scarcity_counts.iloc[i, 1:].sum()
-        total_exacerbating = exacerbate_water_scarcity_counts.iloc[i, 1:].sum()
+    if show_error_bars:
+        for i, scenario in enumerate(scenarios):
+            total_tipping = tip_into_water_scarcity_counts.iloc[i, 1:].sum()
+            total_exacerbating = exacerbate_water_scarcity_counts.iloc[i, 1:].sum()
 
-        tipping_error = (
-            error_tip_into_water_scarcity.loc[error_tip_into_water_scarcity["Scenario"] == scenario].iloc[0, 1:].sum()
-        )
-        exacerbating_error = (
-            error_exacerbate_water_scarcity.loc[error_exacerbate_water_scarcity["Scenario"] == scenario]
-            .iloc[0, 1:]
-            .sum()
-        )
-        ax.errorbar(
-            x[i],
-            total_tipping + total_exacerbating,
-            yerr=[[0], [tipping_error + exacerbating_error]],
-            fmt="none",
-            ecolor="grey",
-            capsize=5,
-        )
+            tipping_error = (
+                error_tip_into_water_scarcity.loc[error_tip_into_water_scarcity["Scenario"] == scenario].iloc[0, 1:].sum()
+            )
+            exacerbating_error = (
+                error_exacerbate_water_scarcity.loc[error_exacerbate_water_scarcity["Scenario"] == scenario]
+                .iloc[0, 1:]
+                .sum()
+            )
+            ax.errorbar(
+                x[i],
+                total_tipping + total_exacerbating,
+                yerr=[[0], [tipping_error + exacerbating_error]],
+                fmt="none",
+                ecolor="grey",
+                capsize=5,
+            )
 
     # Labels and formatting
     ax.set_ylabel("Data centers (%)", fontsize=12)
@@ -793,9 +805,10 @@ def plot_exacerbate_tip_water_scarcity_barchart(
     ax.add_artist(legend1)
 
     # Add error bar to the legend
-    error_handle = plt.Line2D([0], [0], color="grey", marker="|", markersize=10, linestyle="", label="60% EFR")
-    legend2 = ax.legend(handles=[error_handle], loc="upper right", fontsize=10, bbox_to_anchor=(1, 1))
-    ax.add_artist(legend2)
+    if show_error_bars:
+        error_handle = plt.Line2D([0], [0], color="grey", marker="|", markersize=10, linestyle="", label="60% EFR")
+        legend2 = ax.legend(handles=[error_handle], loc="upper right", fontsize=10, bbox_to_anchor=(1, 1))
+        ax.add_artist(legend2)
 
     # Add total line to the legend
     total_handle = plt.Line2D([0], [0], color="black", linestyle="--", linewidth=1, label="Total")
@@ -811,3 +824,169 @@ def plot_exacerbate_tip_water_scarcity_barchart(
     # Layout adjustments
     plt.tight_layout()
     plt.show()
+
+
+def plot_exacerbate_tip_water_scarcity_barchart(
+    scenarios,
+    tip_into_water_scarcity_counts: pd.DataFrame,
+    exacerbate_water_scarcity_counts: pd.DataFrame,
+    error_tip_into_water_scarcity: pd.DataFrame,
+    error_exacerbate_water_scarcity: pd.DataFrame,
+    figure_dir: Path,
+    show_error_bars: bool = False,
+) -> None:
+    """Plot stacked bars showing data centers that tip into or exacerbate water scarcity."""
+    # Create figure
+    fig, ax = plt.subplots(figsize=(7, 7))
+
+    # scenarios = ["Historical", "1.5°C", "2.0°C", "3.2°C"]
+    bins = [(1, 3), (4, 6), (7, 9), (10, 12)]
+    bin_labels = ["1-3", "4-6", "7-9", "10-12"]
+    colors = plt.cm.viridis_r(np.linspace(0.2, 1, len(bins)))
+
+    # Define x positions for the bars
+    x = np.arange(len(scenarios))
+
+    # Define bar width
+    bar_width = 0.3
+
+    # Define a gap between bars
+    gap = 0.1  # Adjust for spacing between bars
+
+    # Adjust x positions for direct and indirect bars
+    x_tipping = x - (bar_width / 2 + gap / 2)
+    x_exacerbating = x + (bar_width / 2 + gap / 2)
+
+    # Initialize bottom values for stacking
+    bottom_tip_into_water_scarcity = np.zeros(len(scenarios))
+    bottom_exacerbate_water_scarcity = np.zeros(len(scenarios))
+
+    # Plot tipping into water scarcity bars with stacking
+    for i, (start, end) in enumerate(bins):
+        bin_data_tip_into_water_scarcity = tip_into_water_scarcity_counts.iloc[:, start : end + 1].sum(axis=1)
+        ax.bar(
+            x_tipping,
+            bin_data_tip_into_water_scarcity,
+            bottom=bottom_tip_into_water_scarcity,
+            width=bar_width,
+            color=colors[i % len(colors)],
+            label=bin_labels[i] if i == 0 else "",
+        )
+        bottom_tip_into_water_scarcity += bin_data_tip_into_water_scarcity
+
+    # Plot exacerbating water scarcity bars with stacking
+    for i, (start, end) in enumerate(bins):
+        bin_data_exacerbate_water_scarcity = exacerbate_water_scarcity_counts.iloc[:, start : end + 1].sum(axis=1)
+        ax.bar(
+            x_exacerbating,
+            bin_data_exacerbate_water_scarcity,
+            bottom=bottom_exacerbate_water_scarcity,
+            width=bar_width,
+            color=colors[i % len(colors)],
+        )
+        bottom_exacerbate_water_scarcity += bin_data_exacerbate_water_scarcity
+
+    # Add error bars
+    if show_error_bars:
+        for i, scenario in enumerate(scenarios):
+            total_tipping = tip_into_water_scarcity_counts.iloc[i, 1:].sum()
+            total_exacerbating = exacerbate_water_scarcity_counts.iloc[i, 1:].sum()
+
+            tipping_error = (
+                error_tip_into_water_scarcity.loc[error_tip_into_water_scarcity["Scenario"] == scenario].iloc[0, 1:].sum()
+            )
+            exacerbating_error = (
+                error_exacerbate_water_scarcity.loc[error_exacerbate_water_scarcity["Scenario"] == scenario]
+                .iloc[0, 1:]
+                .sum()
+            )
+            ax.errorbar(
+                x_exacerbating[i],
+                total_exacerbating,
+                yerr=[[0], [exacerbating_error]],
+                fmt="none",
+                ecolor="grey",
+                capsize=5,
+            )
+            ax.errorbar(x_tipping[i], total_tipping, yerr=[[0], [tipping_error]], fmt="none", ecolor="grey", capsize=5)
+
+    # Add a total line adding the tipping and exacerbating values
+    for i in range(len(scenarios)):
+        total_tipping = tip_into_water_scarcity_counts.iloc[i, 1:].sum()
+        total_exacerbating = exacerbate_water_scarcity_counts.iloc[i, 1:].sum()
+        ax.hlines(
+            total_tipping + total_exacerbating,
+            x_tipping[i] - bar_width / 2,
+            x_exacerbating[i] + bar_width / 2,
+            color="black",
+            linestyle="--",
+            linewidth=1.5,
+            alpha=0.85,
+        )
+
+    # Add error bar for total based on tipping and exacerbating errors
+    if show_error_bars:
+        for i, scenario in enumerate(scenarios):
+            total_tipping = tip_into_water_scarcity_counts.iloc[i, 1:].sum()
+            total_exacerbating = exacerbate_water_scarcity_counts.iloc[i, 1:].sum()
+
+            tipping_error = (
+                error_tip_into_water_scarcity.loc[error_tip_into_water_scarcity["Scenario"] == scenario].iloc[0, 1:].sum()
+            )
+            exacerbating_error = (
+                error_exacerbate_water_scarcity.loc[error_exacerbate_water_scarcity["Scenario"] == scenario]
+                .iloc[0, 1:]
+                .sum()
+            )
+            ax.errorbar(
+                x[i],
+                total_tipping + total_exacerbating,
+                yerr=[[0], [tipping_error + exacerbating_error]],
+                fmt="none",
+                ecolor="grey",
+                capsize=5,
+            )
+
+    scenarios_for_labels = ["Historical", "1.5°C", "2.0°C", "3.2°C"]
+
+    # Labels and formatting
+    ax.set_ylabel("Data centers (%)", fontsize=12)
+    ax.set_xlabel("Global warming scenario", fontsize=12, labelpad=10)
+    ax.set_xticks(x)
+    ax.set_xticklabels(scenarios_for_labels, rotation=0, fontsize=11)
+    ax.tick_params(axis="x", labelrotation=0, pad=15)
+
+    # Add labels for Direct and Indirect above x-axis tick labels
+    for i in range(len(scenarios)):
+        ax.text(x_tipping[i], -0.25, "Tip", ha="center", va="center", fontsize=10, color="black")
+        ax.text(x_exacerbating[i], -0.25, "Exacerbate", ha="center", va="center", fontsize=10, color="black")
+
+    # Adjust x-axis limits to ensure all bars are in view
+    ax.set_xlim(-0.5, len(scenarios) - 0.5)
+
+    # Add legend for the bins
+    handles = [plt.Rectangle((0, 0), 1, 1, color=colors[i]) for i in range(len(bins))]
+    legend1 = ax.legend(handles, bin_labels, title="Increased months of WS due to DC", loc="upper left", fontsize=10)
+    ax.add_artist(legend1)
+
+    # Add error bar to the legend
+    if show_error_bars:
+        error_handle = plt.Line2D([0], [0], color="grey", marker="|", markersize=10, linestyle="", label="60% EFR")
+        legend2 = ax.legend(handles=[error_handle], loc="upper left", fontsize=10, bbox_to_anchor=(0, 0.75))
+        ax.add_artist(legend2)
+
+    # Add total line to the legend
+    total_handle = plt.Line2D([0], [0], color="black", linestyle="--", linewidth=1, label="Total")
+    legend3 = ax.legend(handles=[total_handle], loc="upper left", fontsize=10, bbox_to_anchor=(0, 0.8))
+    ax.add_artist(legend3)
+
+    # Define y axis limits
+    ax.set_ylim(0, 13)
+
+    # Save the plot
+    plt.savefig(figure_dir / "tipping_exacerbating_water_scarcity_barchart.png", dpi=300, bbox_inches="tight")
+
+    # Layout adjustments
+    plt.tight_layout()
+    plt.show()
+
