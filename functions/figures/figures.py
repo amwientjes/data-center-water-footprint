@@ -175,14 +175,14 @@ def plot_months_ws_at_extraction_sites(
         transform=ccrs.PlateCarree(),
         color="lightgrey",
         alpha=0.7,
-        markersize=np.sqrt(water_scarcity_summary["dc_cumulative_monthly_water_use_m3"]) / 3,
+        markersize=np.sqrt(water_scarcity_summary["dc_cumulative_monthly_water_use_m3"] * 5) / 3,
         marker="o",
     )
 
     # Define bins and colors
     bins = [0, 3, 5, 8, 12]
-    if include_dc_contributions:
-        colors = ["lightgrey"] + [plt.cm.viridis_r(i) for i in np.linspace(0.2, 0.95, len(bins) - 1)]
+    if include_dc_contributions: # set opacity of colors based on scenario
+        colors = ["lightgrey"] + [plt.cm.viridis_r(i) for i in np.linspace(0.2, 0.90, len(bins) - 1)]
     elif not include_dc_contributions and warming_scenario == "hist":
         colors = ["lightgrey"] + [plt.cm.YlOrRd(i) for i in np.linspace(0.2, 0.95, len(bins) - 1)]
     elif not include_dc_contributions and warming_scenario != "hist":
@@ -198,7 +198,7 @@ def plot_months_ws_at_extraction_sites(
             ax=ax,
             transform=ccrs.PlateCarree(),
             color=colors[i + 1],
-            markersize=np.sqrt(bin_data["dc_cumulative_monthly_water_use_m3"])/3,
+            markersize=np.sqrt(bin_data["dc_cumulative_monthly_water_use_m3"] * 7)/3,
             marker="o",
         )
 
@@ -227,9 +227,10 @@ def plot_months_ws_at_extraction_sites(
     import matplotlib.patches as mpatches
     from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-    sizes = [10_000, 100_000, 1_000_000, 10_000_000]
+    sizes = [1_000, 10_000, 100_000, 1_000_000]
     labels = [f"{int(s):,}" for s in sizes]
-    marker_sizes = [(np.sqrt(s)/3)**0.53 for s in sizes]
+    # Scale up the marker sizes by multiplying by 7 to make circles smaller
+    marker_sizes = [(np.sqrt(s * 5)/3)**0.53 for s in sizes]
 
     legend_ax = inset_axes(ax, width="10%", height="20%", loc="center left", bbox_to_anchor=(0, -0.18, 1, 1), bbox_transform=ax.transAxes, borderpad=2)
     legend_ax.axis("off")
@@ -566,11 +567,11 @@ def make_capacity_at_risk_boxplot(
     plt.tight_layout()
     plt.show()
 
-def filter_by_country(data_dict, country, include=True):
+def filter_by_country(data_dict, country, country_column = "country", include=True):
     if include:
-        return {scenario: df[df["country"] == country] for scenario, df in data_dict.items()}
+        return {scenario: df[df[country_column] == country] for scenario, df in data_dict.items()}
     else:
-        return {scenario: df[df["country"] != country] for scenario, df in data_dict.items()}
+        return {scenario: df[df[country_column] != country] for scenario, df in data_dict.items()}
 
 
 def plot_relative_increase_ws_map(scenario_data: gpd.GeoDataFrame, figure_dir: Path, scenario_name: str) -> None:
@@ -958,8 +959,8 @@ def plot_exacerbate_tip_water_scarcity_barchart(
 
     # Add labels for Direct and Indirect above x-axis tick labels
     for i in range(len(scenarios)):
-        ax.text(x_tipping[i], -0.25, "Tip", ha="center", va="center", fontsize=10, color="black")
-        ax.text(x_exacerbating[i], -0.25, "Exacerbate", ha="center", va="center", fontsize=10, color="black")
+        ax.text(x_tipping[i], -0.15, "Tip", ha="center", va="center", fontsize=10, color="black")
+        ax.text(x_exacerbating[i], -0.15, "Exacerbate", ha="center", va="center", fontsize=10, color="black")
 
     # Adjust x-axis limits to ensure all bars are in view
     ax.set_xlim(-0.5, len(scenarios) - 0.5)
@@ -981,7 +982,7 @@ def plot_exacerbate_tip_water_scarcity_barchart(
     ax.add_artist(legend3)
 
     # Define y axis limits
-    ax.set_ylim(0, 13)
+    ax.set_ylim(0, 5)
 
     # Save the plot
     plt.savefig(figure_dir / "tipping_exacerbating_water_scarcity_barchart.png", dpi=300, bbox_inches="tight")
@@ -989,4 +990,3 @@ def plot_exacerbate_tip_water_scarcity_barchart(
     # Layout adjustments
     plt.tight_layout()
     plt.show()
-

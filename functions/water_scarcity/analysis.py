@@ -346,7 +346,7 @@ def get_water_scarcity_summary(
             & (summary[wsi_cols["mean"]] != 0)
         )
         # Calculate the number of months data centers increase water scarcity
-        summary["dc_direct_increase_months_count"] = summary[wsi_cols["months_dc"]] - summary[wsi_cols["months"]]
+        summary[f"dc_direct_increase_months_count{suffix}"] = summary[wsi_cols["months_dc"]] - summary[wsi_cols["months"]]
 
         # Water scarcity regions and indirect effects
         power_zones_increase = summary[  # Power zones where data centers increase water scarcity

@@ -8,4 +8,4 @@ MOLLWEIDE_CRS: CRS = CRS.from_string("ESRI:54009")  # Mollweide projection (for 
 
 # Scenario names
 GLOBAL_WARMING_SCENARIOS = ["hist", "1_5C", "2_0C", "3_2C"]
-GLOBAL_WARMING_SCENARIOS_FUTURE = [s for s in GLOBAL_WARMING_SCENARIOS if s != "hist"]
+GLOBAL_WARMING_SCENARIOS_FUTURE = ["1_5C", "2_0C", "3_2C"]  # Excluding historical for future projections
