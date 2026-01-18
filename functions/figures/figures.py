@@ -189,18 +189,39 @@ def plot_months_ws_at_extraction_sites(
         colors = ["lightgrey"] + [plt.cm.plasma_r(i) for i in np.linspace(0.1, 0.95, len(bins) - 1)]
 
     unique_geometries = water_scarcity_summary.drop_duplicates(subset="geometry")
+    if include_dc_contributions:
+        # Exclude rows where WSI_dc_mean is inf, as the water withdrawal location could not be identified at these locations
+        unique_geometries = unique_geometries[unique_geometries["WSI_dc_mean"] != np.inf]
     for i in range(len(bins) - 1):
         bin_data = unique_geometries[
             (unique_geometries[ws_column_name] > bins[i])
             & (unique_geometries[ws_column_name] <= bins[i + 1])
         ]
-        bin_data.plot(
+        if include_dc_contributions:
+            # Plot with DC-specific styling (black edge, thicker linewidth)
+            bin_data.plot(
             ax=ax,
             transform=ccrs.PlateCarree(),
             color=colors[i + 1],
-            markersize=np.sqrt(bin_data["dc_cumulative_monthly_water_use_m3"] * 7)/3,
+            markersize=np.sqrt(bin_data["dc_cumulative_monthly_water_use_m3"] * 7) / 3,
             marker="o",
-        )
+            alpha=0.8,
+            edgecolor="black",
+            linewidth=1.5,
+            linestyle="-" if bin_data["type"].iloc[0] == "data_center" else ":",
+            )
+        else:
+            # Simple plotting when DC contributions are not included
+            bin_data.plot(
+            ax=ax,
+            transform=ccrs.PlateCarree(),
+            color=colors[i + 1],
+            markersize=np.sqrt(bin_data["dc_cumulative_monthly_water_use_m3"] * 7) / 3,
+            marker="o",
+            alpha=0.8,
+            edgecolor="none",
+            linewidth=0,
+            )
 
     # Legends
     legend_labels = ["0 months", "1-3 months", "3-5 months", "5-8 months", "8-12 months"]
@@ -208,7 +229,6 @@ def plot_months_ws_at_extraction_sites(
         plt.Line2D([0], [0], color=color, marker="o", markersize=10, linestyle="", label=label)
         for color, label in zip(colors, legend_labels, strict=False)
     ]
-
     # Modify legend placement and styling
     legend_title = (
         "Months of water scarcity" if warming_scenario == "hist" and not include_dc_contributions else "Increase in months of water scarcity"
@@ -248,6 +268,23 @@ def plot_months_ws_at_extraction_sites(
     # Add label in top left corner of the map
     ax.text(0.01, 0.99, scenario_text, transform=ax.transAxes, fontsize=12, fontweight="bold")
 
+    # If DC contributions included, add a small legend indicating data centers vs power plants (solid vs dotted)
+    if include_dc_contributions:
+        from matplotlib.lines import Line2D
+
+        # Use patch circles so we can control the edge linestyle (dotted for power plants)
+        dc_handle = Line2D([0], [0], color="black", linewidth=2, linestyle="-")
+        pp_handle = Line2D([0], [0], color="black", linewidth=2, linestyle=":")
+        legend2 = ax.legend(
+            handles=[dc_handle, pp_handle],
+            labels=["data centers", "power plants"],
+            loc="lower right",
+            framealpha=1,
+            facecolor="white",
+            title="",
+        )
+        ax.add_artist(legend2)
+
     # Save the plot if SAVE is True
     if save:
         if include_dc_contributions:
@@ -257,8 +294,7 @@ def plot_months_ws_at_extraction_sites(
 
     # Show plot
     plt.show()
-
-
+    
 def calculate_pp_increased_ws_share(
     water_scarcity_summary: gpd.GeoDataFrame,
     power_plants: gpd.GeoDataFrame,

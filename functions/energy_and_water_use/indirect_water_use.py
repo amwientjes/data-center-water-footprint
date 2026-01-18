@@ -173,7 +173,7 @@ def get_power_grid_stats(
     data_centers_df: pd.DataFrame,
     capacity_col: str = "capacity_mw",
     zone_col: str = "power_grid_zone",
-    water_intensity_col: str = "water_intensity_m3/MWh",
+    water_intensity_cols: list = ["water_intensity_m3/MWh", "consumption_water_intensity_m3/MWh"],
 ) -> pd.DataFrame:
     """Find summary statistics for the power grid zones, including the weighted average water intensity, number of power plants, and total capacity.
 
@@ -192,9 +192,10 @@ def get_power_grid_stats(
     power_plants_df[capacity_col] = pd.to_numeric(power_plants_df[capacity_col])
 
     # Calculate the average water intensity within each zone, weighted by the capacity of the power plant.
-    power_plants_df["grid_contribution_weight"] = power_plants_df[water_intensity_col] * (
-        power_plants_df[capacity_col] / power_plants_df.groupby(zone_col)[capacity_col].transform("sum")
-    )
+    for water_intensity_col in water_intensity_cols:
+        power_plants_df["grid_contribution_weight"] = power_plants_df[water_intensity_col] * (
+            power_plants_df[capacity_col] / power_plants_df.groupby(zone_col)[capacity_col].transform("sum")
+        )
 
     # Calculate the total water intensity for each zone
     power_grid_summary = (
@@ -202,7 +203,12 @@ def get_power_grid_stats(
         .apply(
             lambda x: pd.Series(
                 {
-                    water_intensity_col: np.average(x[water_intensity_col], weights=x[capacity_col]),
+                    **{
+                        water_intensity_col: np.average(
+                            x[water_intensity_col], weights=x[capacity_col]
+                        )
+                        for water_intensity_col in water_intensity_cols
+                    },
                     "number_of_power_plants": x[zone_col].count(),
                     "total_capacity_mw": x[capacity_col].sum(),
                 }
@@ -276,6 +282,9 @@ def results_summary(data_centers_df: pd.DataFrame) -> pd.DataFrame:
             direct_water_use_m3=("annual_direct_water_use_m3", "sum"),
             indirect_water_use_m3=("indirect_water_use_m3", "sum"),
             total_water_use_m3=("total_water_use_m3", "sum"),
+            direct_consumption_water_use_m3=("annual_direct_water_consumption_m3", "sum"),
+            indirect_consumption_water_use_m3=("indirect_water_consumption_m3", "sum"),
+            total_consumption_water_use_m3=("total_water_consumption_m3", "sum"),
         )
         .reset_index()
     )
