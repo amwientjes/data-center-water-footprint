@@ -294,7 +294,8 @@ def plot_months_ws_at_extraction_sites(
 
     # Show plot
     plt.show()
-    
+
+
 def calculate_pp_increased_ws_share(
     water_scarcity_summary: gpd.GeoDataFrame,
     power_plants: gpd.GeoDataFrame,
@@ -506,6 +507,9 @@ def make_capacity_at_risk_boxplot(
         }
     )
     total_tcp_gw = water_scarcity_summary_boxplot["1_5C"]["tcp_mw"].sum() / 1000
+    
+    # Print total TCP capacity
+    print(f"\nTotal TCP capacity: {total_tcp_gw:.2f} GW")
 
     # Plotting the boxplot
     future_scenarios_for_plotting = ["1.5°C", "2.0°C", "3.2°C"]
@@ -558,7 +562,8 @@ def make_capacity_at_risk_boxplot(
         if show_error_bars:
             error = error_data_total.loc[error_data_total["Scenario"] == scenario, "Total_capacity_at_risk_error"].values[0]
             ax1.errorbar(x[i], total_capacity, yerr=[[0], [error]], fmt="none", ecolor="grey", capsize=5)
-        print(f"Total capacity at risk for {scenario}: {total_capacity:.0f} %")
+        total_capacity_gw = total_capacity * total_tcp_gw / 100
+        print(f"Total capacity at risk for {scenario}: {total_capacity:.2f} % = {total_capacity_gw:.2f} GW")
 
     if show_error_bars:
         for i, scenario in enumerate(future_scenarios_for_plotting):
@@ -591,10 +596,30 @@ def make_capacity_at_risk_boxplot(
         error_handle = plt.Line2D([0], [0], color="grey", marker="|", markersize=10, linestyle="", label="60% EFR")
         legend3 = ax1.legend(handles=[error_handle], loc="upper left", fontsize=10, bbox_to_anchor=(0, 0.75))
         ax1.add_artist(legend3)
+
+            # Set y-axis limits to match the actual data range (with small padding)
+    max_value = max(
+        water_scarcity_counts_direct.iloc[:, 1:].sum(axis=1).max(),
+        water_scarcity_counts_indirect.iloc[:, 1:].sum(axis=1).max(),
+        water_scarcity_total_capacity_at_risk["Total_capacity_at_risk"].max()
+    )
+    ax1.set_ylim(0, max_value * 1.05)  # Add 5% padding at top
+
+    # Manually set tick positions to align with your data
+    ax1.set_yticks([0, 5, 10, 15, 20, 25, 30])
+    
     ax2 = ax1.twinx()
     ax2.set_ylabel(f"{geographical_scope} data center capacity at increased risk (GW)", fontsize=12, rotation=270, labelpad=20)
     ax2.set_ylim(ax1.get_ylim())
     ax2.set_yticks(ax1.get_yticks())
+    
+    # Debug: Print y-axis information
+    print(f"\nY-axis debug info:")
+    print(f"Y-axis limits (percentage): {ax1.get_ylim()}")
+    print(f"Y-axis ticks (percentage): {ax1.get_yticks()}")
+    print(f"Total TCP GW: {total_tcp_gw:.2f}")
+    print(f"Y-axis ticks (GW): {[ytick * total_tcp_gw / 100 for ytick in ax1.get_yticks()]}")
+    
     ax2.set_yticklabels([f"{ytick * total_tcp_gw / 100:.0f}" for ytick in ax1.get_yticks()])
 
     # Save the plot
@@ -602,6 +627,7 @@ def make_capacity_at_risk_boxplot(
 
     plt.tight_layout()
     plt.show()
+
 
 def filter_by_country(data_dict, country, country_column = "country", include=True):
     if include:
