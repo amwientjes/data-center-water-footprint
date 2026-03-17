@@ -45,7 +45,6 @@ Data centers require significant water resources for cooling systems and power g
 │   ├── figures                             # Module for creating figures functions
 │   ├── water_scarcity                      # Module for water scarcity assessment functions
 │   └── project_settings.py                 # Project-wide variables
-├── 0_scrape_datacenters_com.ipynb          # Web scraping notebook
 ├── 1_data_etl.ipynb                        # Data cleaning and transformation notebook
 ├── 2_energy_and_water_use_analysis.ipynb   # Energy and water use analysis notebook
 ├── 3_water_scarcity_assessment.ipynb       # Water scarcity assessment notebook
