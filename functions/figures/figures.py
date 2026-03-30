@@ -21,7 +21,7 @@ def calculate_water_use_by_basin(
     water_use = water_use.copy()
 
     # Create subset of basins just for the geometry and the sub basin ID
-    sub_basin_boundaries = sub_basin_boundaries[["HYBAS_ID", "geometry"]]
+    sub_basin_boundaries = sub_basin_boundaries[["HYBAS_ID", "geometry", "SUB_AREA"]]
 
     # Spatial join the water use data to the basins shapefile
     water_use_by_subbasin = gpd.sjoin(water_use, sub_basin_boundaries, predicate="within")
